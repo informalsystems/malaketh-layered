@@ -89,19 +89,20 @@ pub struct EngineCapabilities {
     pub get_blobs_v1: bool,
 }
 
-pub struct HttpJsonRpc {
+// RPC client for connecting to Engine RPC endpoint with JWT authentication.
+pub struct EngineRPC {
     client: Client,
     url: Url,
     auth: Auth,
 }
 
-impl std::fmt::Display for HttpJsonRpc {
+impl std::fmt::Display for EngineRPC {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.url)
     }
 }
 
-impl HttpJsonRpc {
+impl EngineRPC {
     pub fn new(url: Url, jwt_path: PathBuf) -> eyre::Result<Self> {
         Ok(Self {
             client: Client::builder().build()?,

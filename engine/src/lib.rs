@@ -1,4 +1,4 @@
 pub mod auth;
 pub mod engine;
-pub mod http;
+pub mod engine_rpc;
 pub mod json_structures;

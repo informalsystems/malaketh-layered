@@ -9,7 +9,7 @@ use color_eyre::eyre;
 use malachitebft_app_channel::app::events::{RxEvent, TxEvent};
 use malachitebft_app_channel::app::NodeHandle;
 use malachitebft_reth_engine::engine::Engine;
-use malachitebft_reth_engine::http::HttpJsonRpc;
+use malachitebft_reth_engine::engine_rpc::EngineRPC;
 use rand::{CryptoRng, RngCore};
 
 use malachitebft_app_channel::app::metrics::SharedRegistry;
@@ -175,7 +175,7 @@ impl Node for App {
             };
             let url = Url::parse(&format!("http://localhost:{}", port))?;
             let jwt_path = PathBuf::from_str("./assets/jwtsecret")?; // Should be the same secret used by the execution client.
-            Engine::new(HttpJsonRpc::new(url, jwt_path)?)
+            Engine::new(EngineRPC::new(url, jwt_path)?)
         };
 
         let app_handle = tokio::spawn(async move {

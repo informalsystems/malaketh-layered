@@ -3,7 +3,7 @@ use color_eyre::eyre::{self, Ok};
 use rand::RngCore;
 use tracing::debug;
 
-use crate::http::HttpJsonRpc;
+use crate::engine_rpc::EngineRPC;
 use alloy_rpc_types_engine::{
     ExecutionPayloadV3, ForkchoiceUpdated, PayloadAttributes, PayloadStatus, PayloadStatusEnum,
 };
@@ -12,11 +12,11 @@ use malachitebft_reth_types::{Address, BlockHash, B256};
 // Engine API client.
 // Spec: https://github.com/ethereum/execution-apis/tree/main/src/engine
 pub struct Engine {
-    pub api: HttpJsonRpc,
+    pub api: EngineRPC,
 }
 
 impl Engine {
-    pub fn new(api: HttpJsonRpc) -> Self {
+    pub fn new(api: EngineRPC) -> Self {
         Self { api }
     }
 
