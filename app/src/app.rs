@@ -87,13 +87,6 @@ pub async fn run(
                 let execution_payload = engine.generate_block(&latest_block).await?;
                 debug!("🌈 Got execution payload: {:?}", execution_payload);
 
-                let tx_count = execution_payload
-                    .payload_inner
-                    .payload_inner
-                    .transactions
-                    .len();
-                debug!("🦄 Block contains {tx_count} transactions");
-
                 // Store block in state and propagate to peers.
                 let bytes = Bytes::from(execution_payload.as_ssz_bytes());
                 debug!("🎁 block size: {:?}, height: {}", bytes.len(), height);
@@ -207,6 +200,13 @@ pub async fn run(
                     state.chain_bytes,
                     state.chain_bytes as f64 / elapsed_time.as_secs_f64(),
                 );
+
+                let tx_count = execution_payload
+                    .payload_inner
+                    .payload_inner
+                    .transactions
+                    .len();
+                debug!("🦄 Block at height {height} contains {tx_count} transactions");
 
                 // Collect hashes from blob transactions
                 let block: Block = execution_payload.clone().try_into_block().unwrap();

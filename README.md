@@ -56,7 +56,7 @@ cast rpc eth_getTransactionCount 0x... # get latest nonce value used for given a
 In a separate console, run the following command (or `make spam`) to send transactions at a rate of
 1000 tx/s to one of the Reth RPC servers.
 ```
-cargo run --bin malachitebft-eth-utils spam --num-txs 1000000 --rate=1000
+cargo run --bin malachitebft-eth-utils spam --num-txs 60000 --rate=1000
 ```
 
 [malachite]: https://github.com/informalsystems/malachite
