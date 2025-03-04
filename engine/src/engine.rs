@@ -100,15 +100,11 @@ impl Engine {
             PayloadStatusEnum::Valid => {
                 assert!(payload_id.is_some(), "Payload ID should be Some!");
                 let payload_id = payload_id.unwrap();
-
                 // See how payload is constructed: https://github.com/ethereum/consensus-specs/blob/v1.1.5/specs/merge/validator.md#block-proposal
-                let execution_payload = self.api.get_payload(payload_id).await?;
-                return Ok(execution_payload);
+                Ok(self.api.get_payload(payload_id).await?)
             }
             // TODO: Handle other statuses.
-            status => {
-                return Err(eyre::eyre!("Invalid payload status: {}", status));
-            }
+            status => Err(eyre::eyre!("Invalid payload status: {}", status)),
         }
     }
 

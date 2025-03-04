@@ -106,8 +106,7 @@ impl From<ExecutionPayloadV3> for JsonExecutionPayloadV3 {
                 .withdrawals
                 .into_iter()
                 .map(Into::into)
-                .collect::<Vec<_>>()
-                .into(),
+                .collect::<Vec<_>>(),
             blob_gas_used: payload.blob_gas_used,
             excess_blob_gas: payload.excess_blob_gas,
         }

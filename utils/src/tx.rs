@@ -13,7 +13,7 @@ pub(crate) fn make_eip4844_tx(nonce: u64) -> Transaction {
         max_fee_per_gas: 50_000_000_000,             // 50 gwei
         max_priority_fee_per_gas: 1_000_000_000_000, // 1000 gwei
         gas_limit: 21_000,
-        to: Address::left_padding_from(&[5]).into(),
+        to: Address::left_padding_from(&[5]),
         value: U256::from(10e15), // 0.001 ETH
         input: Bytes::default(),
         access_list: Default::default(),

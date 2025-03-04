@@ -97,9 +97,3 @@ impl From<AlloyAddress> for Address {
         Self::new(addr.into())
     }
 }
-
-impl Into<AlloyAddress> for Address {
-    fn into(self) -> AlloyAddress {
-        self.0
-    }
-}

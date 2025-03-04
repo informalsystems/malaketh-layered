@@ -8,7 +8,6 @@ use core::time;
 use k256::ecdsa::SigningKey;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{Client, Url};
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -91,7 +90,7 @@ impl Spammer {
             let payload = hex::encode(tx_bytes);
             match self
                 .client
-                .rpc_request::<String>("eth_sendRawTransaction", json!([payload]))
+                .rpc_request("eth_sendRawTransaction", json!([payload]))
                 .await
             {
                 Ok(_response) => {
@@ -157,7 +156,7 @@ impl Spammer {
     async fn get_latest_nonce(&self, address: Address) -> Result<u64> {
         let response = self
             .client
-            .rpc_request::<String>("eth_getTransactionCount", json!([address]))
+            .rpc_request("eth_getTransactionCount", json!([address]))
             .await?;
         // Convert hex string to integer.
         let hex_str = response.as_str().strip_prefix("0x").unwrap();
@@ -176,11 +175,7 @@ impl RpcClient {
         Self { client, url }
     }
 
-    pub async fn rpc_request<D: DeserializeOwned>(
-        &self,
-        method: &str,
-        params: serde_json::Value,
-    ) -> Result<String> {
+    pub async fn rpc_request(&self, method: &str, params: serde_json::Value) -> Result<String> {
         let body = json!({
             "jsonrpc": "2.0",
             "method": method,
