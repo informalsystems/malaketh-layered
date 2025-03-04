@@ -1,5 +1,5 @@
 [package]
-name = "malachitebft-reth-types"
+name = "malachitebft-eth-types"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

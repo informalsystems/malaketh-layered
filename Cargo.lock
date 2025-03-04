@@ -3550,7 +3550,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "malachitebft-reth-app"
+name = "malachitebft-eth-app"
 version = "0.0.1"
 dependencies = [
  "alloy-consensus",
@@ -3564,9 +3564,9 @@ dependencies = [
  "hex",
  "informalsystems-malachitebft-app-channel",
  "informalsystems-malachitebft-proto",
- "malachitebft-reth-cli",
- "malachitebft-reth-engine",
- "malachitebft-reth-types",
+ "malachitebft-eth-cli",
+ "malachitebft-eth-engine",
+ "malachitebft-eth-types",
  "prost",
  "rand 0.8.5",
  "redb",
@@ -3580,7 +3580,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "malachitebft-reth-cli"
+name = "malachitebft-eth-cli"
 version = "0.0.1"
 dependencies = [
  "axum",
@@ -3604,7 +3604,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "malachitebft-reth-engine"
+name = "malachitebft-eth-engine"
 version = "0.0.1"
 dependencies = [
  "alloy-rpc-types",
@@ -3615,7 +3615,7 @@ dependencies = [
  "ethereum_serde_utils",
  "hex",
  "jsonwebtoken",
- "malachitebft-reth-types",
+ "malachitebft-eth-types",
  "rand 0.8.5",
  "reqwest",
  "serde",
@@ -3628,7 +3628,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "malachitebft-reth-types"
+name = "malachitebft-eth-types"
 version = "0.0.1"
 dependencies = [
  "alloy-consensus",

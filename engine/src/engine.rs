@@ -7,7 +7,7 @@ use crate::engine_rpc::EngineRPC;
 use alloy_rpc_types_engine::{
     ExecutionPayloadV3, ForkchoiceUpdated, PayloadAttributes, PayloadStatus, PayloadStatusEnum,
 };
-use malachitebft_reth_types::{Address, BlockHash, B256};
+use malachitebft_eth_types::{Address, BlockHash, B256};
 
 // Engine API client.
 // Spec: https://github.com/ethereum/execution-apis/tree/main/src/engine

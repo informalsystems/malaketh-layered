@@ -1,5 +1,5 @@
 [package]
-name = "malachitebft-reth-cli"
+name = "malachitebft-eth-cli"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

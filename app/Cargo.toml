@@ -1,5 +1,5 @@
 [package]
-name = "malachitebft-reth-app"
+name = "malachitebft-eth-app"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -11,9 +11,9 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
-malachitebft-reth-types.workspace = true
-malachitebft-reth-cli.workspace = true
-malachitebft-reth-engine.workspace = true
+malachitebft-eth-types.workspace = true
+malachitebft-eth-cli.workspace = true
+malachitebft-eth-engine.workspace = true
 malachitebft-app-channel.workspace = true
 malachitebft-proto.workspace = true
 

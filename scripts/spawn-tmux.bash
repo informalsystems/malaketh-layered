@@ -95,7 +95,7 @@ if [ -z "$NODES_COUNT" ] || [ -z "$NODES_HOME" ]; then
 fi
 
 # Set defaults
-app_name=${app_name:-"malachitebft-reth-app"}
+app_name=${app_name:-"malachitebft-eth-app"}
 profile=${profile:-false}
 debug=${debug:-false}
 lldb=${lldb:-false}

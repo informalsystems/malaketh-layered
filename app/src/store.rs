@@ -13,11 +13,11 @@ use tracing::error;
 use malachitebft_app_channel::app::types::codec::Codec;
 use malachitebft_app_channel::app::types::core::{CommitCertificate, Round};
 use malachitebft_app_channel::app::types::ProposedValue;
+use malachitebft_eth_types::codec::proto as codec;
+use malachitebft_eth_types::codec::proto::ProtobufCodec;
+use malachitebft_eth_types::proto;
+use malachitebft_eth_types::{Height, TestContext, Value};
 use malachitebft_proto::{Error as ProtoError, Protobuf};
-use malachitebft_reth_types::codec::proto as codec;
-use malachitebft_reth_types::codec::proto::ProtobufCodec;
-use malachitebft_reth_types::proto;
-use malachitebft_reth_types::{Height, TestContext, Value};
 
 mod keys;
 use keys::{HeightKey, UndecidedValueKey};

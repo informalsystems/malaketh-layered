@@ -13,9 +13,9 @@ use malachitebft_app_channel::app::types::core::{Round, Validity};
 use malachitebft_app_channel::app::types::sync::RawDecidedValue;
 use malachitebft_app_channel::app::types::{LocallyProposedValue, ProposedValue};
 use malachitebft_app_channel::{AppMsg, Channels, ConsensusMsg, NetworkMsg};
-use malachitebft_reth_engine::engine::Engine;
-use malachitebft_reth_types::codec::proto::ProtobufCodec;
-use malachitebft_reth_types::{Block, TestContext};
+use malachitebft_eth_engine::engine::Engine;
+use malachitebft_eth_types::codec::proto::ProtobufCodec;
+use malachitebft_eth_types::{Block, TestContext};
 
 pub async fn run(
     state: &mut State,

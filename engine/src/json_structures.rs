@@ -1,6 +1,6 @@
 use alloy_rpc_types::Withdrawal;
 use alloy_rpc_types_engine::ExecutionPayloadV3;
-use malachitebft_reth_types::{
+use malachitebft_eth_types::{
     Address, BlockHash, BlockNumber, BlockTimestamp, Bloom, Bytes, B256, U256,
 };
 use serde::{Deserialize, Serialize};

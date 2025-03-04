@@ -1,5 +1,5 @@
 [package]
-name = "malachitebft-reth-engine"
+name = "malachitebft-eth-engine"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -27,7 +27,7 @@ ethereum_serde_utils = "0.7"
 reqwest = { version = "0.12.2", default-features = false, features = ["blocking", "json", "stream", "rustls-tls", "native-tls-vendored"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
-malachitebft-reth-types = { workspace = true }
+malachitebft-eth-types = { workspace = true }
 alloy-rpc-types         = { version = "0.11.0", features = ["eth"], default-features = false }
 alloy-rpc-types-engine  = { workspace = true }
 alloy-transport-http    = { version = "0.11.0", features = ["jwt-auth"] }

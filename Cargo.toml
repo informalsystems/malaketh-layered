@@ -28,10 +28,10 @@ overflow-checks = true
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
 
 [workspace.dependencies]
-malachitebft-reth-app    = { version = "0.0.1", path = "app" }
-malachitebft-reth-cli    = { version = "0.0.1", path = "cli" }
-malachitebft-reth-engine = { version = "0.0.1", path = "engine" }
-malachitebft-reth-types  = { version = "0.0.1", path = "types" }
+malachitebft-eth-app    = { version = "0.0.1", path = "app" }
+malachitebft-eth-cli    = { version = "0.0.1", path = "cli" }
+malachitebft-eth-engine = { version = "0.0.1", path = "engine" }
+malachitebft-eth-types  = { version = "0.0.1", path = "types" }
 
 alloy-consensus        = { version = "0.11.1", default-features = false }
 alloy-rpc-types-eth    = { version = "0.11.1", default-features = false }

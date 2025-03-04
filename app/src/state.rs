@@ -15,8 +15,8 @@ use malachitebft_app_channel::app::streaming::{StreamContent, StreamId, StreamMe
 use malachitebft_app_channel::app::types::codec::Codec;
 use malachitebft_app_channel::app::types::core::{CommitCertificate, Round, Validity};
 use malachitebft_app_channel::app::types::{LocallyProposedValue, PeerId, ProposedValue};
-use malachitebft_reth_types::codec::proto::ProtobufCodec;
-use malachitebft_reth_types::{
+use malachitebft_eth_types::codec::proto::ProtobufCodec;
+use malachitebft_eth_types::{
     Address, BlockHash, Ed25519Provider, Genesis, Height, ProposalData, ProposalFin, ProposalInit,
     ProposalPart, TestContext, ValidatorSet, Value,
 };

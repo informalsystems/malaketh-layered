@@ -33,7 +33,7 @@ if [[ -z "$NODES_HOME" ]]; then
 fi
 
 if [[ -z "$APP_BINARY" ]]; then
-    APP_BINARY="malachitebft-reth-app"
+    APP_BINARY="malachitebft-eth-app"
 fi
 
 echo "Compiling '$APP_BINARY'..."

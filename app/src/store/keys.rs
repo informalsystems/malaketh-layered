@@ -1,7 +1,7 @@
 use core::mem::size_of;
 
 use malachitebft_app_channel::app::types::core::Round;
-use malachitebft_reth_types::Height;
+use malachitebft_eth_types::Height;
 
 pub type UndecidedValueKey = (HeightKey, RoundKey);
 

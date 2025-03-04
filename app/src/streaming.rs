@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BinaryHeap, HashSet};
 use malachitebft_app_channel::app::streaming::{Sequence, StreamId, StreamMessage};
 use malachitebft_app_channel::app::types::core::Round;
 use malachitebft_app_channel::app::types::PeerId;
-use malachitebft_reth_types::{Address, Height, ProposalInit, ProposalPart};
+use malachitebft_eth_types::{Address, Height, ProposalInit, ProposalPart};
 
 struct MinSeq<T>(StreamMessage<T>);
 

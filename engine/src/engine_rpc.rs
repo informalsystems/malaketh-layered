@@ -3,7 +3,7 @@ use alloy_rpc_types_engine::{
     PayloadAttributes, PayloadId as AlloyPayloadId, PayloadStatus,
 };
 use color_eyre::eyre;
-use malachitebft_reth_types::{BlockHash, B256};
+use malachitebft_eth_types::{BlockHash, B256};
 use reqwest::{header::CONTENT_TYPE, Client, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
