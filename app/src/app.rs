@@ -92,9 +92,7 @@ pub async fn run(
                     .payload_inner
                     .transactions
                     .len();
-                if tx_count > 0 {
-                    debug!("🦄 Block contains {tx_count} transactions");
-                }
+                debug!("🦄 Block contains {tx_count} transactions");
 
                 // Store block in state and propagate to peers.
                 let bytes = Bytes::from(execution_payload.as_ssz_bytes());
@@ -171,21 +169,18 @@ pub async fn run(
             AppMsg::Decided {
                 certificate, reply, ..
             } => {
+                let height = certificate.height;
+                let round = certificate.round;
                 info!(
-                    height = %certificate.height, round = %certificate.round,
-                    value = %certificate.value_id,
+                    %height, %round, value = %certificate.value_id,
                     "🟢🟢 Consensus has decided on value"
                 );
 
                 let block_bytes = state
-                    .get_block_data(certificate.height, certificate.round)
+                    .get_block_data(height, round)
                     .await
                     .expect("certificate should have associated block data");
-                debug!(
-                    "🎁 block size: {:?}, height: {}",
-                    block_bytes.len(),
-                    certificate.height
-                );
+                debug!("🎁 block size: {:?}, height: {}", block_bytes.len(), height);
 
                 // Decode bytes into execution payload (a block)
                 let execution_payload = ExecutionPayloadV3::from_ssz_bytes(&block_bytes).unwrap();
@@ -206,7 +201,7 @@ pub async fn run(
                 let elapsed_time = state.start_time.elapsed();
                 info!(
                     "👉 stats at height {}: #txs={}, txs/s={:.2}, chain_bytes={}, bytes/s={:.2}",
-                    certificate.height,
+                    height,
                     state.txs_count,
                     state.txs_count as f64 / elapsed_time.as_secs_f64(),
                     state.chain_bytes,
@@ -229,7 +224,7 @@ pub async fn run(
                     }
                     debug!(
                         "💡 New block added at height {} with hash: {}",
-                        certificate.height, new_block_hash
+                        height, new_block_hash
                     );
                 }
 
@@ -237,8 +232,8 @@ pub async fn run(
                 // Update the execution head state to this block.
                 let latest_valid_hash = engine.set_latest_forkchoice_state(new_block_hash).await?;
                 debug!(
-                    "🚀 Forkchoice updated to height {} with block hash: {}, latest_valid_hash: {}",
-                    certificate.height, new_block_hash, latest_valid_hash
+                    "🚀 Forkchoice updated to height {} for block hash={} and latest_valid_hash={}",
+                    height, new_block_hash, latest_valid_hash
                 );
 
                 // When that happens, we store the decided value in our store

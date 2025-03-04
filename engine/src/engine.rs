@@ -1,11 +1,12 @@
-// use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use color_eyre::eyre::{self, Ok};
 use rand::RngCore;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
 use alloy_rpc_types_engine::{
     ExecutionPayloadV3, ForkchoiceUpdated, PayloadAttributes, PayloadStatus, PayloadStatusEnum,
 };
+
 use malachitebft_eth_types::{Address, BlockHash, B256};
 
 use crate::{engine_rpc::EngineRPC, ethereum_rpc::EthereumRPC, json_structures::ExecutionBlock};
@@ -77,7 +78,7 @@ impl Engine {
             // The beacon chain generates this value using aggregated validator signatures over time.
             // The mix_hash field in the generated block will be equal to prev_randao.
             // TODO: generate value according to spec.
-            prev_randao: self.gen_prev_randao(),
+            prev_randao: self.random_prev_randao(),
 
             suggested_fee_recipient: Address::repeat_byte(42).to_alloy_address(),
 
@@ -99,8 +100,8 @@ impl Engine {
             PayloadStatusEnum::Valid => {
                 assert!(payload_id.is_some(), "Payload ID should be Some!");
                 let payload_id = payload_id.unwrap();
-                // Use payload_id to get payload. See prepare_execution_payload:
-                // https://github.com/sigp/lighthouse/blob/a732a8784643d053051d386294ce53f542cf8237/beacon_node/beacon_chain/src/execution_payload.rs#L439
+
+                // See how payload is constructed: https://github.com/ethereum/consensus-specs/blob/v1.1.5/specs/merge/validator.md#block-proposal
                 let execution_payload = self.api.get_payload(payload_id).await?;
                 return Ok(execution_payload);
             }
@@ -122,15 +123,15 @@ impl Engine {
             .await
     }
 
-    // /// Returns the duration since the unix epoch.
-    // fn timestamp_now(&self) -> u64 {
-    //     SystemTime::now()
-    //         .duration_since(UNIX_EPOCH)
-    //         .unwrap_or_else(|_| Duration::from_secs(0))
-    //         .as_secs()
-    // }
+    /// Returns the duration since the unix epoch.
+    fn _timestamp_now(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_else(|_| Duration::from_secs(0))
+            .as_secs()
+    }
 
-    fn gen_prev_randao(&self) -> B256 {
+    fn random_prev_randao(&self) -> B256 {
         let mut bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut bytes);
         bytes.into()

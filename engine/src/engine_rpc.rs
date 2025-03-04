@@ -1,22 +1,20 @@
-use alloy_rpc_types_engine::{
-    ExecutionPayloadEnvelopeV3, ExecutionPayloadV3, ForkchoiceState, ForkchoiceUpdated,
-    PayloadAttributes, PayloadId as AlloyPayloadId, PayloadStatus,
-};
 use color_eyre::eyre;
-use malachitebft_eth_types::{BlockHash, B256};
 use reqwest::{header::CONTENT_TYPE, Client, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
-use tracing::debug;
+
+use alloy_rpc_types_engine::{
+    ExecutionPayloadEnvelopeV3, ExecutionPayloadV3, ForkchoiceState, ForkchoiceUpdated,
+    PayloadAttributes, PayloadId as AlloyPayloadId, PayloadStatus,
+};
+
+use malachitebft_eth_types::{BlockHash, B256};
 
 use crate::auth::Auth;
 use crate::json_structures::*;
-
-const STATIC_ID: u32 = 1;
-pub const JSONRPC_VERSION: &str = "2.0";
 
 pub const ENGINE_NEW_PAYLOAD_V1: &str = "engine_newPayloadV1";
 pub const ENGINE_NEW_PAYLOAD_V2: &str = "engine_newPayloadV2";
@@ -116,13 +114,11 @@ impl EngineRPC {
         timeout: Duration,
     ) -> eyre::Result<D> {
         let body = JsonRequestBody {
-            jsonrpc: JSONRPC_VERSION,
+            jsonrpc: "2.0",
             method,
             params,
-            id: json!(STATIC_ID),
+            id: json!(1),
         };
-        debug!("🛜 rpc_request: {body:?}");
-
         let token = self.auth.generate_token()?;
         let request = self
             .client
@@ -133,13 +129,14 @@ impl EngineRPC {
             .json(&body);
         let body: JsonResponseBody = request.send().await?.error_for_status()?.json().await?;
 
-        match (body.result, body.error) {
-            (result, None) => serde_json::from_value(result).map_err(Into::into),
-            (_, Some(error)) => Err(eyre::eyre!(
+        if let Some(error) = body.error {
+            Err(eyre::eyre!(
                 "Server Message: code: {}, message: {}",
                 error.code,
                 error.message,
-            )),
+            ))
+        } else {
+            serde_json::from_value(body.result).map_err(Into::into)
         }
     }
 
