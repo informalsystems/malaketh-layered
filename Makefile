@@ -7,9 +7,17 @@ all: clean
 	echo 👉 Grafana dashboard is available at http://localhost:3000
 	bash scripts/spawn.bash --nodes 3 --home nodes
 
-clean:
+stop:
 	docker compose down
+
+clean: clean-prometheus
+	rm -rf ./assets/genesis.json
 	rm -rf ./nodes
 	rm -rf ./rethdata
 	rm -rf ./monitoring/data-grafana
 
+clean-prometheus: stop
+	rm -rf ./monitoring/data-prometheus
+
+spam:
+	cargo run --bin malachitebft-eth-utils spam --num-txs 1000000 --rate=1000

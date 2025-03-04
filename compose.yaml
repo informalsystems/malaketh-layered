@@ -17,7 +17,7 @@ services:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     command:
       - "node"
-      - "-vvv"
+      - "-vvvvv"
       - "-d"
       - "--datadir=/data/reth/execution-data"
       - "--chain=/root/assets/genesis.json"
@@ -32,6 +32,8 @@ services:
       - "--metrics=0.0.0.0:9001"
       - "--discovery.port=30303"
       - "--port=30303"
+      - "--txpool.pending-max-count=20000" # default=10000
+      - "--txpool.queued-max-count=20000" # default=10000
   reth1:
     image: ghcr.io/paradigmxyz/reth:v1.1.5
     container_name: reth1
@@ -50,7 +52,7 @@ services:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     command:
       - "node"
-      - "-vvv"
+      - "-vvvvv"
       - "-d"
       - "--datadir=/data/reth/execution-data"
       - "--chain=/root/assets/genesis.json"
@@ -65,6 +67,8 @@ services:
       - "--metrics=0.0.0.0:9001"
       - "--discovery.port=40303"
       - "--port=40303"
+      - "--txpool.pending-max-count=20000" # default=10000
+      - "--txpool.queued-max-count=20000" # default=10000
   reth2:
     image: ghcr.io/paradigmxyz/reth:v1.1.5
     container_name: reth2
@@ -83,7 +87,7 @@ services:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     command:
       - "node"
-      - "-vvv"
+      - "-vvvvv"
       - "-d"
       - "--datadir=/data/reth/execution-data"
       - "--chain=/root/assets/genesis.json"
@@ -98,44 +102,8 @@ services:
       - "--metrics=0.0.0.0:9001"
       - "--discovery.port=50303"
       - "--port=50303"
-  tx-fuzz:
-    image: ethpandaops/tx-fuzz:master
-    depends_on:
-      - reth0
-      - reth1
-      - reth2
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command:
-      - "spam"
-      - "--rpc=http://reth0:8545"
-      - "--sk=ab63b23eb7941c1251757e24b3d2350d2bc05c3c388d06f8fe6feafefb1e8c70"
-  spamoor:
-    image: ethpandaops/spamoor:latest
-    depends_on:
-      - reth0
-      - reth1
-      - reth2
-    command:
-      - "eoatx"
-      - "-v"
-      - "--throughput=500"
-      - "--rpchost=http://reth0:8545"
-      - "--privkey=ab63b23eb7941c1251757e24b3d2350d2bc05c3c388d06f8fe6feafefb1e8c70"
-  spamoor_blob:
-    image: ethpandaops/spamoor:latest
-    depends_on:
-      - reth0
-      - reth1
-      - reth2
-    command:
-      - "blob-combined"
-      - "-v"
-      - "--throughput=3"
-      - "--max-pending=6"
-      - "--max-wallets=20"
-      - "--rpchost=http://reth0:8545"
-      - "--privkey=ab63b23eb7941c1251757e24b3d2350d2bc05c3c388d06f8fe6feafefb1e8c70"
+      - "--txpool.pending-max-count=20000" # default=10000
+      - "--txpool.queued-max-count=20000" # default=10000
   prometheus:
     image: prom/prometheus
     #image: prom/prometheus:v2.42.0 # Debian 12 seems to use a fairly old version of prometheus
