@@ -10,6 +10,7 @@ use malachitebft_app_channel::app::events::{RxEvent, TxEvent};
 use malachitebft_app_channel::app::NodeHandle;
 use malachitebft_eth_engine::engine::Engine;
 use malachitebft_eth_engine::engine_rpc::EngineRPC;
+use malachitebft_eth_engine::ethereum_rpc::EthereumRPC;
 use rand::{CryptoRng, RngCore};
 
 use malachitebft_app_channel::app::metrics::SharedRegistry;
@@ -167,15 +168,29 @@ impl Node for App {
 
         let engine: Engine = {
             // TODO: make EL host, EL port, and jwt secret configurable
-            let port = match self.config.moniker.as_str() {
-                "test-0" => 8551,
-                "test-1" => 18551,
-                "test-2" => 28551,
-                _ => 8551,
+            let engine_url: Url = {
+                let engine_port = match self.config.moniker.as_str() {
+                    "test-0" => 8551,
+                    "test-1" => 18551,
+                    "test-2" => 28551,
+                    _ => 8551,
+                };
+                Url::parse(&format!("http://localhost:{}", engine_port))?
             };
-            let url = Url::parse(&format!("http://localhost:{}", port))?;
             let jwt_path = PathBuf::from_str("./assets/jwtsecret")?; // Should be the same secret used by the execution client.
-            Engine::new(EngineRPC::new(url, jwt_path)?)
+            let eth_url: Url = {
+                let eth_port = match self.config.moniker.as_str() {
+                    "test-0" => 8545,
+                    "test-1" => 18545,
+                    "test-2" => 28545,
+                    _ => 8545,
+                };
+                Url::parse(&format!("http://localhost:{}", eth_port))?
+            };
+            Engine::new(
+                EngineRPC::new(engine_url, jwt_path)?,
+                EthereumRPC::new(eth_url)?,
+            )
         };
 
         let app_handle = tokio::spawn(async move {

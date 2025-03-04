@@ -18,9 +18,6 @@ use crate::json_structures::*;
 const STATIC_ID: u32 = 1;
 pub const JSONRPC_VERSION: &str = "2.0";
 
-pub const ETH_GET_BLOCK_BY_NUMBER: &str = "eth_getBlockByNumber";
-pub const ETH_GET_BLOCK_BY_NUMBER_TIMEOUT: Duration = Duration::from_secs(1);
-
 pub const ENGINE_NEW_PAYLOAD_V1: &str = "engine_newPayloadV1";
 pub const ENGINE_NEW_PAYLOAD_V2: &str = "engine_newPayloadV2";
 pub const ENGINE_NEW_PAYLOAD_V3: &str = "engine_newPayloadV3";
@@ -146,12 +143,6 @@ impl EngineRPC {
         }
     }
 
-    /// Get the eth1 chain id of the given endpoint.
-    pub async fn get_chain_id(&self) -> eyre::Result<String> {
-        self.rpc_request("eth_chainId", json!([]), Duration::from_secs(1))
-            .await
-    }
-
     pub async fn exchange_capabilities(&self) -> eyre::Result<EngineCapabilities> {
         let capabilities: HashSet<String> = self
             .rpc_request(
@@ -228,19 +219,5 @@ impl EngineRPC {
         let params = json!([payload, versioned_hashes, parent_block_hash]);
         self.rpc_request(ENGINE_NEW_PAYLOAD_V3, params, ENGINE_NEW_PAYLOAD_TIMEOUT)
             .await
-    }
-
-    pub async fn get_block_by_number(
-        &self,
-        block_number: &str,
-    ) -> eyre::Result<Option<ExecutionBlock>> {
-        let return_full_transaction_objects = false;
-        let params = json!([block_number, return_full_transaction_objects]);
-        self.rpc_request(
-            ETH_GET_BLOCK_BY_NUMBER,
-            params,
-            ETH_GET_BLOCK_BY_NUMBER_TIMEOUT,
-        )
-        .await
     }
 }

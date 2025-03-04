@@ -15,9 +15,11 @@ use malachitebft_app_channel::app::streaming::{StreamContent, StreamId, StreamMe
 use malachitebft_app_channel::app::types::codec::Codec;
 use malachitebft_app_channel::app::types::core::{CommitCertificate, Round, Validity};
 use malachitebft_app_channel::app::types::{LocallyProposedValue, PeerId, ProposedValue};
+
+use malachitebft_eth_engine::json_structures::ExecutionBlock;
 use malachitebft_eth_types::codec::proto::ProtobufCodec;
 use malachitebft_eth_types::{
-    Address, BlockHash, Ed25519Provider, Genesis, Height, ProposalData, ProposalFin, ProposalInit,
+    Address, Ed25519Provider, Genesis, Height, ProposalData, ProposalFin, ProposalInit,
     ProposalPart, TestContext, ValidatorSet, Value,
 };
 
@@ -51,7 +53,7 @@ pub struct State {
     pub peers: HashSet<PeerId>,
 
     // TODO: is this value already available somewhere in the state?
-    pub head_block_hash: Option<BlockHash>,
+    pub latest_block: Option<ExecutionBlock>,
 
     pub txs_count: u64,
     pub chain_bytes: u64,
@@ -107,7 +109,7 @@ impl State {
             rng: StdRng::seed_from_u64(seed_from_address(&address)),
             peers: HashSet::new(),
 
-            head_block_hash: None,
+            latest_block: None,
 
             txs_count: 0,
             chain_bytes: 0,

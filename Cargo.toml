@@ -34,6 +34,7 @@ malachitebft-eth-engine = { version = "0.0.1", path = "engine" }
 malachitebft-eth-types  = { version = "0.0.1", path = "types" }
 
 alloy-consensus        = { version = "0.11.1", default-features = false }
+alloy-rpc-types        = { version = "0.11.1", features = ["eth"], default-features = false }
 alloy-rpc-types-eth    = { version = "0.11.1", default-features = false }
 alloy-rpc-types-engine = { version = "0.11.1", features = ["ssz"], default-features = false }
 
@@ -64,7 +65,7 @@ toml               = "0.8.19"
 tracing            = "0.1.41"
 tracing-appender   = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-url = "2"
+url                = "2"
 
 [workspace.dependencies.malachitebft-app]
 package = "informalsystems-malachitebft-app"

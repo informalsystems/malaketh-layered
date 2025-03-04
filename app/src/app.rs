@@ -3,9 +3,6 @@ use color_eyre::eyre::{self, eyre};
 use ssz::{Decode, Encode};
 use tracing::{debug, error, info};
 
-use crate::state::{decode_value, State};
-
-use alloy_consensus::Transaction;
 use alloy_rpc_types_engine::ExecutionPayloadV3;
 use malachitebft_app_channel::app::streaming::StreamContent;
 use malachitebft_app_channel::app::types::codec::Codec;
@@ -13,9 +10,13 @@ use malachitebft_app_channel::app::types::core::{Round, Validity};
 use malachitebft_app_channel::app::types::sync::RawDecidedValue;
 use malachitebft_app_channel::app::types::{LocallyProposedValue, ProposedValue};
 use malachitebft_app_channel::{AppMsg, Channels, ConsensusMsg, NetworkMsg};
+
 use malachitebft_eth_engine::engine::Engine;
+use malachitebft_eth_engine::json_structures::ExecutionBlock;
 use malachitebft_eth_types::codec::proto::ProtobufCodec;
-use malachitebft_eth_types::{Block, TestContext};
+use malachitebft_eth_types::{Block, BlockHash, TestContext};
+
+use crate::state::{decode_value, State};
 
 pub async fn run(
     state: &mut State,
@@ -34,9 +35,9 @@ pub async fn run(
                 engine.check_capabilities().await?;
 
                 // Get the latest block from the execution engine
-                let latest_block = engine.api.get_block_by_number("latest").await?.unwrap();
+                let latest_block = engine.eth.get_block_by_number("latest").await?.unwrap();
                 debug!("👉 latest_block: {:?}", latest_block);
-                state.head_block_hash = Some(latest_block.block_hash);
+                state.latest_block = Some(latest_block);
 
                 // We can simply respond by telling the engine to start consensus
                 // at the current height, which is initially 1
@@ -82,12 +83,9 @@ pub async fn run(
 
                 // We need to ask the execution engine for a new value to
                 // propose. Then we send it back to consensus.
-                let head_block_hash = state.head_block_hash.expect("Head block hash is not set");
-                let execution_payload = engine.generate_block(head_block_hash).await?;
-                debug!(
-                    "🌈 Got execution payload (block) from execution engine: {:?}",
-                    execution_payload
-                );
+                let latest_block = state.latest_block.expect("Head block hash is not set");
+                let execution_payload = engine.generate_block(&latest_block).await?;
+                debug!("🌈 Got execution payload: {:?}", execution_payload);
 
                 let tx_count = execution_payload
                     .payload_inner
@@ -193,7 +191,9 @@ pub async fn run(
                 let execution_payload = ExecutionPayloadV3::from_ssz_bytes(&block_bytes).unwrap();
                 let parent_block_hash = execution_payload.payload_inner.payload_inner.parent_hash;
                 let new_block_hash = execution_payload.payload_inner.payload_inner.block_hash;
-                assert_eq!(state.head_block_hash, Some(parent_block_hash));
+                assert_eq!(state.latest_block.unwrap().block_hash, parent_block_hash);
+                let new_block_timestamp = execution_payload.timestamp();
+                let new_block_number = execution_payload.payload_inner.payload_inner.block_number;
 
                 // Log stats
                 let tx_count = execution_payload
@@ -215,12 +215,8 @@ pub async fn run(
 
                 // Collect hashes from blob transactions
                 let block: Block = execution_payload.clone().try_into_block().unwrap();
-                let versioned_hashes = block
-                    .body
-                    .transactions
-                    .iter()
-                    .flat_map(|tx| tx.blob_versioned_hashes().unwrap_or_default().to_vec())
-                    .collect::<Vec<_>>();
+                let versioned_hashes: Vec<BlockHash> =
+                    block.body.blob_versioned_hashes_iter().copied().collect();
 
                 // If the node is not the proposer, provide the received block
                 // to the execution client (EL).
@@ -248,8 +244,13 @@ pub async fn run(
                 // When that happens, we store the decided value in our store
                 state.commit(certificate).await?;
 
-                // Update the head block hash
-                state.head_block_hash = Some(new_block_hash);
+                // Save the latest block
+                state.latest_block = Some(ExecutionBlock {
+                    block_hash: new_block_hash,
+                    block_number: new_block_number,
+                    parent_hash: latest_valid_hash,
+                    timestamp: new_block_timestamp,
+                });
 
                 // Pause briefly before starting next height, just to make following the logs easier
                 // tokio::time::sleep(Duration::from_millis(500)).await;

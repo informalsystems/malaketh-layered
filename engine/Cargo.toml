@@ -18,16 +18,16 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 async-trait = "0.1"
 hex = "0.4"
-
 rand ={ workspace = true }
 color-eyre = { workspace = true }
 jsonwebtoken = "9"
-thiserror = "2.0.11"
+thiserror = { workspace = true }
 ethereum_serde_utils = "0.7"
 reqwest = { version = "0.12.2", default-features = false, features = ["blocking", "json", "stream", "rustls-tls", "native-tls-vendored"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 malachitebft-eth-types = { workspace = true }
-alloy-rpc-types         = { version = "0.11.0", features = ["eth"], default-features = false }
+alloy-rpc-types         = { workspace = true }
 alloy-rpc-types-engine  = { workspace = true }
-alloy-transport-http    = { version = "0.11.0", features = ["jwt-auth"] }
+alloy-rpc-types-txpool  = { version = "0.11.1" }
+alloy-transport-http    = { version = "0.11.1", features = ["jwt-auth"] }

@@ -3,21 +3,22 @@ use color_eyre::eyre::{self, Ok};
 use rand::RngCore;
 use tracing::debug;
 
-use crate::engine_rpc::EngineRPC;
 use alloy_rpc_types_engine::{
     ExecutionPayloadV3, ForkchoiceUpdated, PayloadAttributes, PayloadStatus, PayloadStatusEnum,
 };
 use malachitebft_eth_types::{Address, BlockHash, B256};
 
+use crate::{engine_rpc::EngineRPC, ethereum_rpc::EthereumRPC, json_structures::ExecutionBlock};
 // Engine API client.
 // Spec: https://github.com/ethereum/execution-apis/tree/main/src/engine
 pub struct Engine {
     pub api: EngineRPC,
+    pub eth: EthereumRPC,
 }
 
 impl Engine {
-    pub fn new(api: EngineRPC) -> Self {
-        Self { api }
+    pub fn new(api: EngineRPC, eth: EthereumRPC) -> Self {
+        Self { api, eth }
     }
 
     pub async fn check_capabilities(&self) -> eyre::Result<()> {
@@ -58,13 +59,13 @@ impl Engine {
         }
     }
 
-    pub async fn generate_block(&self, block_hash: BlockHash) -> eyre::Result<ExecutionPayloadV3> {
-        debug!("🟠 generate_block on top of {:?}", block_hash);
+    pub async fn generate_block(
+        &self,
+        latest_block: &ExecutionBlock,
+    ) -> eyre::Result<ExecutionPayloadV3> {
+        debug!("🟠 generate_block on top of {:?}", latest_block);
 
-        // TODO: cache the latest block
-        let latest_block = self.api.get_block_by_number("latest").await?.unwrap();
-        debug!("👉 latest_block: {:?}", latest_block);
-        assert_eq!(block_hash, latest_block.block_hash);
+        let block_hash = latest_block.block_hash;
 
         let payload_attributes = PayloadAttributes {
             // timestamp should be greater than that of forkchoiceState.headBlockHash
