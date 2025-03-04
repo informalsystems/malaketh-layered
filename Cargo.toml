@@ -5,6 +5,7 @@ members = [
   "app",
   "cli",
   "engine",
+  "utils",
   "types",
 ]
 
