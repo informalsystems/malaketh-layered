@@ -2,28 +2,32 @@ use crate::make_signers;
 use crate::tx::{make_signed_eip1559_tx, make_signed_eip4844_tx};
 use alloy_network::eip2718::Encodable2718;
 use alloy_primitives::Address;
+use alloy_rpc_types_txpool::TxpoolStatus;
 use alloy_signer_local::LocalSigner;
 use color_eyre::eyre::{self, Result};
-use core::time;
+use core::fmt;
 use k256::ecdsa::SigningKey;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{Client, Url};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use std::sync::mpsc::channel;
-use std::thread;
-use std::time::Duration;
-use tokio::runtime::Runtime;
-use tokio::time::sleep;
+use std::sync::Arc;
+use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::time::{self, sleep, Duration, Instant};
 
+/// A transaction spammer that sends Ethereum transactions at a controlled rate.
+/// Tracks and reports statistics on sent transactions.
 pub struct Spammer {
     /// Client for Ethereum RPC node server.
     client: RpcClient,
     /// Ethereum transaction signer.
     signer: LocalSigner<SigningKey>,
-    /// Maximum number of transactions to send.
+    /// Maximum number of transactions to send (0 for no limit).
     max_num_txs: u64,
+    /// Maximum number of seconds to run the spammer (0 for no limit).
+    max_time: u64,
     /// Maximum number of transactions to send per second.
     max_rate: u64,
     /// Whether to send EIP-4844 blob transactions.
@@ -31,38 +35,80 @@ pub struct Spammer {
 }
 
 impl Spammer {
-    pub fn new(url: Url, max_num_txs: u64, max_rate: u64, blobs: bool) -> Result<Self> {
+    pub fn new(
+        url: Url,
+        max_num_txs: u64,
+        max_time: u64,
+        max_rate: u64,
+        blobs: bool,
+    ) -> Result<Self> {
         // Initialize runtime, RPC client, and signers.
         let client = RpcClient::new(url);
         let signers = make_signers();
 
-        // Pick one signer to send transactions from.
+        // Pick one signer from which to send transactions.
         let signer = signers[0].clone();
 
         Ok(Self {
             client,
             signer,
             max_num_txs,
+            max_time,
             max_rate,
             blobs,
         })
     }
 
-    pub fn run(&self) -> Result<()> {
-        let rt = Runtime::new()?;
-        rt.block_on(self.spam())
-            .expect("Failed to create transaction");
+    pub async fn run(self) -> Result<()> {
+        // Create channels for communication between spammer and tracker.
+        let (result_sender, result_receiver) = mpsc::channel::<Result<u64>>(10000);
+        let (report_sender, report_receiver) = mpsc::channel::<Instant>(1);
+        let (finish_sender, finish_receiver) = mpsc::channel::<()>(1);
+
+        let self_arc = Arc::new(self);
+
+        // Spawn spammer.
+        let spammer_handle = tokio::spawn({
+            let self_arc = Arc::clone(&self_arc);
+            async move {
+                self_arc
+                    .spammer(result_sender, report_sender, finish_sender)
+                    .await
+            }
+        });
+
+        // Spawn result tracker.
+        let tracker_handle = tokio::spawn({
+            let self_arc = Arc::clone(&self_arc);
+            async move {
+                self_arc
+                    .tracker(result_receiver, report_receiver, finish_receiver)
+                    .await
+            }
+        });
+
+        let _ = tokio::join!(spammer_handle, tracker_handle);
         Ok(())
     }
 
-    async fn spam(&self) -> Result<()> {
-        // Spawn ticker.
-        let (tick_sender, tick_receiver) = channel::<()>();
-        thread::spawn(move || loop {
-            thread::sleep(time::Duration::from_secs(1));
-            tick_sender.send(()).unwrap();
-        });
+    // Fetch from an Ethereum node the latest used nonce for the given address.
+    async fn get_latest_nonce(&self, address: Address) -> Result<u64> {
+        let response: String = self
+            .client
+            .rpc_request("eth_getTransactionCount", json!([address]))
+            .await?;
+        // Convert hex string to integer.
+        let hex_str = response.as_str().strip_prefix("0x").unwrap();
+        Ok(u64::from_str_radix(hex_str, 16)?)
+    }
 
+    /// Generate and send transactions to the Ethereum node at a controlled rate.
+    async fn spammer(
+        &self,
+        result_sender: Sender<Result<u64>>,
+        report_sender: Sender<Instant>,
+        finish_sender: Sender<()>,
+    ) -> Result<()> {
         // Fetch latest nonce for the sender address.
         let address = self.signer.address();
         let latest_nonce = self.get_latest_nonce(address).await?;
@@ -70,97 +116,177 @@ impl Spammer {
 
         // Initialize nonce and counters.
         let mut nonce = latest_nonce;
-        let mut sent_succeed = 0u64;
-        let mut last_sent_succeed = 0u64;
-        let mut sent_bytes = 0u64;
-        let mut last_sent_bytes = 0u64;
-        let mut sent_failed = HashMap::<String, usize>::new(); // counters for each kind of error
-        let start_time = std::time::Instant::now();
+        let start_time = Instant::now();
+        let mut txs_sent_total = 0u64;
+        let mut interval = time::interval(Duration::from_secs(1));
         loop {
-            // Create one transaction and sing it.
-            let signed_tx = if self.blobs {
-                make_signed_eip4844_tx(&self.signer, nonce).await?
-            } else {
-                make_signed_eip1559_tx(&self.signer, nonce).await?
-            };
-            let tx_bytes = signed_tx.encoded_2718();
-            let tx_bytes_len = tx_bytes.len() as u64;
+            // Wait for next one-second tick.
+            let _ = interval.tick().await;
+            let mut txs_sent_in_interval = 0u64;
+            let interval_start = Instant::now();
 
-            // Send transaction to Ethereum RPC endpoint.
-            let payload = hex::encode(tx_bytes);
-            match self
-                .client
-                .rpc_request("eth_sendRawTransaction", json!([payload]))
-                .await
-            {
-                Ok(_response) => {
-                    sent_bytes += tx_bytes_len;
-                    sent_succeed += 1;
-                }
-                Err(error) => {
-                    sent_failed
-                        .entry(error.to_string())
-                        .and_modify(|count| *count += 1)
-                        .or_insert(0);
-                }
-            }
-
-            nonce += 1;
-
-            // Check if rate limit is reached and show stats every ~one second.
-            let sent_txs_last_second = sent_succeed - last_sent_succeed;
-            if sent_txs_last_second >= self.max_rate || tick_receiver.try_recv().is_ok() {
-                if sent_succeed >= self.max_rate {
-                    // Block until next tick, so we don't exceed the rate limit.
-                    tick_receiver.recv().unwrap();
+            // Send up to max_rate transactions per one-second interval.
+            while txs_sent_in_interval < self.max_rate {
+                // Check exit conditions before sending each transaction.
+                if (self.max_num_txs > 0 && txs_sent_total >= self.max_num_txs)
+                    || (self.max_time > 0 && start_time.elapsed().as_secs() >= self.max_time)
+                {
+                    break;
                 }
 
-                // Show stats
-                let elapsed = start_time.elapsed().as_secs_f64();
-                let stats = format!(
-                    "elapsed {:.3}s: Sent {} txs ({} bytes)",
-                    elapsed,
-                    sent_txs_last_second,
-                    sent_bytes - last_sent_bytes,
-                );
-                let stats_failed = if sent_failed.is_empty() {
-                    String::new()
+                // Create one transaction and sing it.
+                let signed_tx = if self.blobs {
+                    make_signed_eip4844_tx(&self.signer, nonce).await?
                 } else {
-                    format!("; failed {} with {:?}", sent_failed.len(), sent_failed)
+                    make_signed_eip1559_tx(&self.signer, nonce).await?
                 };
-                println!(
-                    "{stats}{stats_failed}; tx/s={:.1}",
-                    sent_succeed as f64 / elapsed,
-                );
+                let tx_bytes = signed_tx.encoded_2718();
+                let tx_bytes_len = tx_bytes.len() as u64;
 
-                // Reset counters
-                last_sent_succeed = sent_succeed;
-                last_sent_bytes = sent_bytes;
-                sent_failed.clear();
+                // Send transaction to Ethereum RPC endpoint.
+                let payload = hex::encode(tx_bytes);
+                let result = self
+                    .client
+                    .rpc_request("eth_sendRawTransaction", json!([payload]))
+                    .await
+                    .map(|_: String| tx_bytes_len);
+
+                // Report result and update counters.
+                result_sender.send(result).await?;
+                txs_sent_in_interval += 1;
+                nonce += 1;
+                txs_sent_total += 1;
             }
 
-            // Stop if number of sent transactions exceeds the limit.
-            if sent_succeed >= self.max_num_txs {
+            // Signal tracker to report stats after this batch.
+            report_sender.try_send(interval_start)?;
+
+            // Check exit conditions after each tick.
+            if (self.max_num_txs > 0 && txs_sent_total >= self.max_num_txs)
+                || (self.max_time > 0 && start_time.elapsed().as_secs() >= self.max_time)
+            {
                 break;
             }
         }
-        let elapsed = start_time.elapsed().as_secs_f64();
-        println!(
-            "Sent {} txs ({} bytes) in {} seconds",
-            sent_succeed, sent_bytes, elapsed
-        );
+        finish_sender.send(()).await?;
         Ok(())
     }
 
-    // Fetch from an Ethereum node the latest used nonce for the given address.
-    async fn get_latest_nonce(&self, address: Address) -> Result<u64> {
-        let response = self
-            .client
-            .rpc_request("eth_getTransactionCount", json!([address]))
-            .await?;
-        // Convert hex string to integer.
-        let hex_str = response.as_str().strip_prefix("0x").unwrap();
-        Ok(u64::from_str_radix(hex_str, 16)?)
+    // Track and report statistics on sent transactions.
+    async fn tracker(
+        &self,
+        mut result_receiver: Receiver<Result<u64>>,
+        mut report_receiver: Receiver<Instant>,
+        mut finish_receiver: Receiver<()>,
+    ) -> Result<()> {
+        // Initialize counters
+        let start_time = Instant::now();
+        let mut stats_total = Stats::new(start_time);
+        let mut stats_last_second = Stats::new(start_time);
+        loop {
+            tokio::select! {
+                // Update counters
+                Some(res) = result_receiver.recv() => {
+                    match res {
+                        Ok(tx_length) => stats_last_second.incr_ok(tx_length),
+                        Err(error) => stats_last_second.incr_err(&error.to_string()),
+                    }
+                }
+                // Report stats
+                Some(interval_start) = report_receiver.recv() => {
+                    // Wait a complete one second before reporting.
+                    let elapsed = interval_start.elapsed();
+                    if elapsed < Duration::from_secs(1) {
+                        sleep(Duration::from_secs(1) - elapsed).await;
+                    }
+
+                    let pool_status: TxpoolStatus = self.client.rpc_request("txpool_status", json!([])).await?;
+                    println!("{stats_last_second}; {pool_status:?}");
+
+                    // Update total, then reset last second stats
+                    stats_total.add(&stats_last_second);
+                    stats_last_second.reset();
+                }
+                // Stop tracking
+                _ = finish_receiver.recv() => {
+                    break;
+                }
+            }
+        }
+        println!("Total: {stats_total}");
+        Ok(())
+    }
+}
+
+/// Statistics on sent transactions.
+struct Stats {
+    start_time: Instant,
+    succeed: u64,
+    bytes: u64,
+    failed: u64,
+    errors_counter: HashMap<String, u64>,
+}
+
+impl Stats {
+    fn new(start_time: Instant) -> Self {
+        Self {
+            start_time,
+            succeed: 0,
+            bytes: 0,
+            failed: 0,
+            errors_counter: HashMap::new(),
+        }
+    }
+
+    fn incr_ok(&mut self, tx_length: u64) {
+        self.succeed += 1;
+        self.bytes += tx_length;
+    }
+
+    fn incr_err(&mut self, error: &str) {
+        self.failed += 1;
+        self.errors_counter
+            .entry(error.to_string())
+            .and_modify(|count| *count += 1)
+            .or_insert(1);
+    }
+
+    fn add(&mut self, other: &Self) {
+        self.succeed += other.succeed;
+        self.bytes += other.bytes;
+        self.failed += other.failed;
+        for (error, count) in &other.errors_counter {
+            self.errors_counter
+                .entry(error.to_string())
+                .and_modify(|c| *c += count)
+                .or_insert(*count);
+        }
+    }
+
+    fn reset(&mut self) {
+        self.succeed = 0;
+        self.bytes = 0;
+        self.failed = 0;
+        self.errors_counter.clear();
+    }
+}
+
+impl fmt::Display for Stats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let elapsed = self.start_time.elapsed().as_millis();
+        let stats = format!(
+            "elapsed {:.3}s: Sent {} txs ({} bytes)",
+            elapsed as f64 / 1000f64,
+            self.succeed,
+            self.bytes
+        );
+        let stats_failed = if self.errors_counter.is_empty() {
+            String::new()
+        } else {
+            // let failed = self.errors_counter.iter().map(|(_, c)| *c).sum::<u64>();
+            format!("; {} failed with {:?}", self.failed, self.errors_counter)
+        };
+        write!(f, "{stats}{stats_failed}")
     }
 }
 
@@ -175,7 +301,11 @@ impl RpcClient {
         Self { client, url }
     }
 
-    pub async fn rpc_request(&self, method: &str, params: serde_json::Value) -> Result<String> {
+    pub async fn rpc_request<D: DeserializeOwned>(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<D> {
         let body = json!({
             "jsonrpc": "2.0",
             "method": method,
@@ -192,11 +322,11 @@ impl RpcClient {
 
         if let Some(JsonError { code, message }) = body.error {
             match code {
-                // txpool is full
+                // txpool is full or nonce too low
                 -32003 => {
-                    // don't panic, just wait a bit to continue sending
                     println!("Warning: {message}");
-                    sleep(Duration::from_secs(1)).await;
+                    // don't panic, just wait a bit and continue sending
+                    // sleep(Duration::from_millis(100)).await;
                     serde_json::from_value(body.result).map_err(Into::into)
                 }
                 _ => Err(eyre::eyre!("Server Error {}: {}", code, message)),

@@ -27,16 +27,19 @@ pub(crate) enum Commands {
 #[derive(Parser, Debug, Clone, Default, PartialEq)]
 pub struct SpamCmd {
     /// Number of transactions to send
-    #[clap(short, long, default_value = "100000")]
+    #[clap(short, long, default_value = "0")]
     num_txs: u64,
-    #[clap(short, long, default_value = "10000")]
+    #[clap(short, long, default_value = "1000")]
     rate: u64,
+    #[clap(short, long, default_value = "0")]
+    time: u64,
     /// Spam EIP-4844 (blob) transactions instead of EIP-1559
     #[clap(long, default_value = "false")]
     blobs: bool,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli = Cli::parse();
@@ -45,10 +48,11 @@ fn main() -> Result<()> {
         Commands::Spam(SpamCmd {
             num_txs,
             rate,
+            time,
             blobs,
         }) => {
             let url = "http://127.0.0.1:8545".parse()?;
-            Spammer::new(url, num_txs, rate, blobs)?.run()
+            Spammer::new(url, num_txs, time, rate, blobs)?.run().await
         }
     }
 }
