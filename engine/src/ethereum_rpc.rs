@@ -8,7 +8,7 @@ use alloy_rpc_types_txpool::{TxpoolInspect, TxpoolStatus};
 
 use crate::json_structures::*;
 
-// RPC client for connecting to Ethereum server node.
+/// RPC client for Ethereum server.
 pub struct EthereumRPC {
     client: Client,
     url: Url,

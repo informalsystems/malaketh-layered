@@ -10,8 +10,8 @@ use alloy_rpc_types_engine::{
 use malachitebft_eth_types::{Address, BlockHash, B256};
 
 use crate::{engine_rpc::EngineRPC, ethereum_rpc::EthereumRPC, json_structures::ExecutionBlock};
-// Engine API client.
-// Spec: https://github.com/ethereum/execution-apis/tree/main/src/engine
+/// RPC client for Engine API.
+/// Spec: https://github.com/ethereum/execution-apis/tree/main/src/engine
 pub struct Engine {
     pub api: EngineRPC,
     pub eth: EthereumRPC,
@@ -69,8 +69,8 @@ impl Engine {
         let block_hash = latest_block.block_hash;
 
         let payload_attributes = PayloadAttributes {
-            // timestamp should be greater than that of forkchoiceState.headBlockHash
-            // timestamp: self.timestamp_now(),
+            // Unix timestamp for when the payload is expected to be executed.
+            // It should be greater than that of forkchoiceState.headBlockHash.
             timestamp: latest_block.timestamp + 1,
 
             // prev_randao comes from the previous beacon block and influences the proposer selection mechanism.
@@ -80,6 +80,7 @@ impl Engine {
             // TODO: generate value according to spec.
             prev_randao: self.random_prev_randao(),
 
+            // TODO: provide proper address.
             suggested_fee_recipient: Address::repeat_byte(42).to_alloy_address(),
 
             // Cannot be None in V3.

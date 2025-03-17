@@ -52,9 +52,9 @@ pub struct State {
     pub current_proposer: Option<Address>,
     pub peers: HashSet<PeerId>,
 
-    // TODO: is this value already available somewhere in the state?
     pub latest_block: Option<ExecutionBlock>,
 
+    // For stats
     pub txs_count: u64,
     pub chain_bytes: u64,
     pub start_time: Instant,
