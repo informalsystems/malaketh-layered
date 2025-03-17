@@ -3,7 +3,7 @@ use reqwest::{header::CONTENT_TYPE, Client, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::Path;
 use std::time::Duration;
 
 use alloy_rpc_types_engine::{
@@ -98,11 +98,11 @@ impl std::fmt::Display for EngineRPC {
 }
 
 impl EngineRPC {
-    pub fn new(url: Url, jwt_path: PathBuf) -> eyre::Result<Self> {
+    pub fn new(url: Url, jwt_path: &Path) -> eyre::Result<Self> {
         Ok(Self {
             client: Client::builder().build()?,
             url,
-            auth: Auth::new_with_path(jwt_path, None, None)
+            auth: Auth::new_from_path(jwt_path)
                 .map_err(|error| eyre::eyre!("Failed to load configuration file: {error}"))?,
         })
     }

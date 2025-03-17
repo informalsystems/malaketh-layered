@@ -188,7 +188,7 @@ impl Node for App {
                 Url::parse(&format!("http://localhost:{}", eth_port))?
             };
             Engine::new(
-                EngineRPC::new(engine_url, jwt_path)?,
+                EngineRPC::new(engine_url, jwt_path.as_path())?,
                 EthereumRPC::new(eth_url)?,
             )
         };
