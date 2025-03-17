@@ -102,11 +102,7 @@ impl From<ExecutionPayloadV3> for JsonExecutionPayloadV3 {
             base_fee_per_gas: v1.base_fee_per_gas,
             block_hash: v1.block_hash,
             transactions: v1.transactions,
-            withdrawals: v2
-                .withdrawals
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
+            withdrawals: v2.withdrawals.into_iter().collect::<Vec<_>>(),
             blob_gas_used: payload.blob_gas_used,
             excess_blob_gas: payload.excess_blob_gas,
         }
