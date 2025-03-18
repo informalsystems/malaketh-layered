@@ -13,16 +13,18 @@ const TEST_MNEMONICS: [&str; 3] = [
     "zero zero zero zero zero zero zero zero zero zero zero zoo",
 ];
 
+/// Create a signer from a mnemonic.
+pub(crate) fn make_signer(mnemonic: &str) -> LocalSigner<SigningKey> {
+    MnemonicBuilder::<English>::default()
+        .phrase(mnemonic)
+        .build()
+        .expect("Failed to create wallet")
+}
+
 pub(crate) fn make_signers() -> Vec<LocalSigner<SigningKey>> {
-    // Create signers and get their addresses
     TEST_MNEMONICS
         .iter()
-        .map(|&mnemonic| {
-            MnemonicBuilder::<English>::default()
-                .phrase(mnemonic)
-                .build()
-                .expect("Failed to create wallet")
-        })
+        .map(|&mnemonic| make_signer(mnemonic))
         .collect()
 }
 

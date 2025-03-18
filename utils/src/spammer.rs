@@ -20,6 +20,8 @@ use tokio::time::{self, sleep, Duration, Instant};
 /// A transaction spammer that sends Ethereum transactions at a controlled rate.
 /// Tracks and reports statistics on sent transactions.
 pub struct Spammer {
+    /// Spammer identifier.
+    id: String,
     /// Client for Ethereum RPC node server.
     client: RpcClient,
     /// Ethereum transaction signer.
@@ -37,21 +39,17 @@ pub struct Spammer {
 impl Spammer {
     pub fn new(
         url: Url,
+        signer_index: usize,
         max_num_txs: u64,
         max_time: u64,
         max_rate: u64,
         blobs: bool,
     ) -> Result<Self> {
-        // Initialize runtime, RPC client, and signers.
-        let client = RpcClient::new(url);
         let signers = make_signers();
-
-        // Pick one signer from which to send transactions.
-        let signer = signers[0].clone();
-
         Ok(Self {
-            client,
-            signer,
+            id: signer_index.to_string(),
+            client: RpcClient::new(url),
+            signer: signers[signer_index].clone(),
             max_num_txs,
             max_time,
             max_rate,
@@ -158,6 +156,9 @@ impl Spammer {
                 txs_sent_total += 1;
             }
 
+            // Give time to the in-flight results to be received.
+            sleep(Duration::from_millis(20)).await;
+
             // Signal tracker to report stats after this batch.
             report_sender.try_send(interval_start)?;
 
@@ -181,8 +182,8 @@ impl Spammer {
     ) -> Result<()> {
         // Initialize counters
         let start_time = Instant::now();
-        let mut stats_total = Stats::new(start_time);
-        let mut stats_last_second = Stats::new(start_time);
+        let mut stats_total = Stats::new(self.id.as_str(), start_time);
+        let mut stats_last_second = Stats::new(self.id.as_str(), start_time);
         loop {
             tokio::select! {
                 // Update counters
@@ -194,7 +195,7 @@ impl Spammer {
                 }
                 // Report stats
                 Some(interval_start) = report_receiver.recv() => {
-                    // Wait a complete one second before reporting.
+                    // Wait what's missing to complete one second.
                     let elapsed = interval_start.elapsed();
                     if elapsed < Duration::from_secs(1) {
                         sleep(Duration::from_secs(1) - elapsed).await;
@@ -220,20 +221,20 @@ impl Spammer {
 
 /// Statistics on sent transactions.
 struct Stats {
+    id: String,
     start_time: Instant,
     succeed: u64,
     bytes: u64,
-    failed: u64,
     errors_counter: HashMap<String, u64>,
 }
 
 impl Stats {
-    fn new(start_time: Instant) -> Self {
+    fn new(id: &str, start_time: Instant) -> Self {
         Self {
+            id: id.to_string(),
             start_time,
             succeed: 0,
             bytes: 0,
-            failed: 0,
             errors_counter: HashMap::new(),
         }
     }
@@ -244,7 +245,6 @@ impl Stats {
     }
 
     fn incr_err(&mut self, error: &str) {
-        self.failed += 1;
         self.errors_counter
             .entry(error.to_string())
             .and_modify(|count| *count += 1)
@@ -254,7 +254,6 @@ impl Stats {
     fn add(&mut self, other: &Self) {
         self.succeed += other.succeed;
         self.bytes += other.bytes;
-        self.failed += other.failed;
         for (error, count) in &other.errors_counter {
             self.errors_counter
                 .entry(error.to_string())
@@ -266,7 +265,6 @@ impl Stats {
     fn reset(&mut self) {
         self.succeed = 0;
         self.bytes = 0;
-        self.failed = 0;
         self.errors_counter.clear();
     }
 }
@@ -275,7 +273,8 @@ impl fmt::Display for Stats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let elapsed = self.start_time.elapsed().as_millis();
         let stats = format!(
-            "elapsed {:.3}s: Sent {} txs ({} bytes)",
+            "[{}] elapsed {:.3}s: Sent {} txs ({} bytes)",
+            self.id,
             elapsed as f64 / 1000f64,
             self.succeed,
             self.bytes
@@ -283,8 +282,8 @@ impl fmt::Display for Stats {
         let stats_failed = if self.errors_counter.is_empty() {
             String::new()
         } else {
-            // let failed = self.errors_counter.iter().map(|(_, c)| *c).sum::<u64>();
-            format!("; {} failed with {:?}", self.failed, self.errors_counter)
+            let failed = self.errors_counter.iter().map(|(_, c)| *c).sum::<u64>();
+            format!("; {} failed with {:?}", failed, self.errors_counter)
         };
         write!(f, "{stats}{stats_failed}")
     }
@@ -321,16 +320,7 @@ impl RpcClient {
         let body: JsonResponseBody = request.send().await?.error_for_status()?.json().await?;
 
         if let Some(JsonError { code, message }) = body.error {
-            match code {
-                // txpool is full or nonce too low
-                -32003 => {
-                    println!("Warning: {message}");
-                    // don't panic, just wait a bit and continue sending
-                    // sleep(Duration::from_millis(100)).await;
-                    serde_json::from_value(body.result).map_err(Into::into)
-                }
-                _ => Err(eyre::eyre!("Server Error {}: {}", code, message)),
-            }
+            Err(eyre::eyre!("Server Error {}: {}", code, message))
         } else {
             serde_json::from_value(body.result).map_err(Into::into)
         }
