@@ -20,4 +20,4 @@ clean-prometheus: stop
 	rm -rf ./monitoring/data-prometheus
 
 spam:
-	cargo run --bin malachitebft-eth-utils spam --num-txs 60000 --rate=1000
+	cargo run --bin malachitebft-eth-utils spam --time=60 --rate=1000
