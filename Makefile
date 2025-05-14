@@ -20,4 +20,4 @@ clean-prometheus: stop
 	rm -rf ./monitoring/data-prometheus
 
 spam:
-	cargo run --bin malachitebft-eth-utils spam --time=60 --rate=1000
+	cargo run --bin malachitebft-eth-utils spam --time=60 --rate=500 --rpc-url=127.0.0.1:8545
