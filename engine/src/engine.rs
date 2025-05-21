@@ -35,11 +35,16 @@ impl Engine {
         head_block_hash: BlockHash,
     ) -> eyre::Result<BlockHash> {
         debug!("🟠 set_latest_forkchoice_state: {:?}", head_block_hash);
+
         let ForkchoiceUpdated {
             payload_status,
             payload_id,
         } = self.api.forkchoice_updated(head_block_hash, None).await?;
+
         assert!(payload_id.is_none(), "Payload ID should be None!");
+
+        debug!("➡️ payload_status: {:?}", payload_status);
+
         match payload_status.status {
             PayloadStatusEnum::Valid => Ok(payload_status.latest_valid_hash.unwrap()),
             PayloadStatusEnum::Syncing if payload_status.latest_valid_hash.is_none() => {

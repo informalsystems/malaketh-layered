@@ -220,20 +220,16 @@ pub async fn run(
                 let versioned_hashes: Vec<BlockHash> =
                     block.body.blob_versioned_hashes_iter().copied().collect();
 
-                // If the node is not the proposer, provide the received block
-                // to the execution client (EL).
-                if !state.is_current_proposer() {
-                    let payload_status = engine
-                        .notify_new_block(execution_payload, versioned_hashes)
-                        .await?;
-                    if payload_status.status.is_invalid() {
-                        return Err(eyre!("Invalid payload status: {}", payload_status.status));
-                    }
-                    debug!(
-                        "💡 New block added at height {} with hash: {}",
-                        height, new_block_hash
-                    );
+                let payload_status = engine
+                    .notify_new_block(execution_payload, versioned_hashes)
+                    .await?;
+                if payload_status.status.is_invalid() {
+                    return Err(eyre!("Invalid payload status: {}", payload_status.status));
                 }
+                debug!(
+                    "💡 New block added at height {} with hash: {}",
+                    height, new_block_hash
+                );
 
                 // Notify the execution client (EL) of the new block.
                 // Update the execution head state to this block.
