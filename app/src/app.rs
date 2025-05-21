@@ -177,9 +177,13 @@ pub async fn run(
 
                 // Decode bytes into execution payload (a block)
                 let execution_payload = ExecutionPayloadV3::from_ssz_bytes(&block_bytes).unwrap();
+
                 let parent_block_hash = execution_payload.payload_inner.payload_inner.parent_hash;
+
                 let new_block_hash = execution_payload.payload_inner.payload_inner.block_hash;
+
                 assert_eq!(state.latest_block.unwrap().block_hash, parent_block_hash);
+
                 let new_block_timestamp = execution_payload.timestamp();
                 let new_block_number = execution_payload.payload_inner.payload_inner.block_number;
 
