@@ -183,6 +183,9 @@ pub async fn run(
                 let new_block_timestamp = execution_payload.timestamp();
                 let new_block_number = execution_payload.payload_inner.payload_inner.block_number;
 
+                let new_block_prev_randao =
+                    execution_payload.payload_inner.payload_inner.prev_randao;
+
                 // Log stats
                 let tx_count = execution_payload
                     .payload_inner
@@ -245,6 +248,7 @@ pub async fn run(
                     block_number: new_block_number,
                     parent_hash: latest_valid_hash,
                     timestamp: new_block_timestamp,
+                    prev_randao: new_block_prev_randao,
                 });
 
                 // Pause briefly before starting next height, just to make following the logs easier
