@@ -114,10 +114,15 @@ impl From<ExecutionPayloadV3> for JsonExecutionPayloadV3 {
 pub struct ExecutionBlock {
     #[serde(rename = "hash")]
     pub block_hash: BlockHash,
+
     #[serde(rename = "number", with = "serde_utils::u64_hex_be")]
     pub block_number: BlockNumber,
+
     pub parent_hash: BlockHash,
+
     #[serde(with = "serde_utils::u64_hex_be")]
     pub timestamp: BlockTimestamp,
+
+    #[serde(rename = "mixHash")]
     pub prev_randao: B256,
 }
