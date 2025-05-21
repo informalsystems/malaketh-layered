@@ -119,4 +119,5 @@ pub struct ExecutionBlock {
     pub parent_hash: BlockHash,
     #[serde(with = "serde_utils::u64_hex_be")]
     pub timestamp: BlockTimestamp,
+    pub prev_randao: B256,
 }
