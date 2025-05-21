@@ -78,7 +78,7 @@ impl Engine {
             // The beacon chain generates this value using aggregated validator signatures over time.
             // The mix_hash field in the generated block will be equal to prev_randao.
             // TODO: generate value according to spec.
-            prev_randao: self.random_prev_randao(),
+            prev_randao: latest_block.prev_randao,
 
             // TODO: provide proper address.
             suggested_fee_recipient: Address::repeat_byte(42).to_alloy_address(),
@@ -96,7 +96,9 @@ impl Engine {
             .api
             .forkchoice_updated(block_hash, Some(payload_attributes))
             .await?;
+
         assert_eq!(payload_status.latest_valid_hash, Some(block_hash));
+
         match payload_status.status {
             PayloadStatusEnum::Valid => {
                 assert!(payload_id.is_some(), "Payload ID should be Some!");
