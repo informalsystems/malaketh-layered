@@ -3,6 +3,7 @@ use reqwest::{header::CONTENT_TYPE, Client, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::time::Duration;
+use tracing::debug;
 
 use alloy_rpc_types_txpool::{TxpoolInspect, TxpoolStatus};
 
@@ -41,6 +42,8 @@ impl EthereumRPC {
             .header(CONTENT_TYPE, "application/json")
             .json(&body);
         let body: JsonResponseBody = request.send().await?.error_for_status()?.json().await?;
+
+        debug!("response body: {:?}", body);
 
         match (body.result, body.error) {
             (result, None) => serde_json::from_value(result).map_err(Into::into),
