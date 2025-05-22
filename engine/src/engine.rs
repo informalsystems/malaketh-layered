@@ -134,10 +134,4 @@ impl Engine {
             .unwrap_or_else(|_| Duration::from_secs(0))
             .as_secs()
     }
-
-    fn random_prev_randao(&self) -> B256 {
-        let mut bytes = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut bytes);
-        bytes.into()
-    }
 }
