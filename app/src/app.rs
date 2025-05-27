@@ -177,11 +177,18 @@ pub async fn run(
 
                 // Decode bytes into execution payload (a block)
                 let execution_payload = ExecutionPayloadV3::from_ssz_bytes(&block_bytes).unwrap();
+
                 let parent_block_hash = execution_payload.payload_inner.payload_inner.parent_hash;
+
                 let new_block_hash = execution_payload.payload_inner.payload_inner.block_hash;
+
                 assert_eq!(state.latest_block.unwrap().block_hash, parent_block_hash);
+
                 let new_block_timestamp = execution_payload.timestamp();
                 let new_block_number = execution_payload.payload_inner.payload_inner.block_number;
+
+                let new_block_prev_randao =
+                    execution_payload.payload_inner.payload_inner.prev_randao;
 
                 // Log stats
                 let tx_count = execution_payload
@@ -213,20 +220,16 @@ pub async fn run(
                 let versioned_hashes: Vec<BlockHash> =
                     block.body.blob_versioned_hashes_iter().copied().collect();
 
-                // If the node is not the proposer, provide the received block
-                // to the execution client (EL).
-                if !state.is_current_proposer() {
-                    let payload_status = engine
-                        .notify_new_block(execution_payload, versioned_hashes)
-                        .await?;
-                    if payload_status.status.is_invalid() {
-                        return Err(eyre!("Invalid payload status: {}", payload_status.status));
-                    }
-                    debug!(
-                        "💡 New block added at height {} with hash: {}",
-                        height, new_block_hash
-                    );
+                let payload_status = engine
+                    .notify_new_block(execution_payload, versioned_hashes)
+                    .await?;
+                if payload_status.status.is_invalid() {
+                    return Err(eyre!("Invalid payload status: {}", payload_status.status));
                 }
+                debug!(
+                    "💡 New block added at height {} with hash: {}",
+                    height, new_block_hash
+                );
 
                 // Notify the execution client (EL) of the new block.
                 // Update the execution head state to this block.
@@ -245,6 +248,7 @@ pub async fn run(
                     block_number: new_block_number,
                     parent_hash: latest_valid_hash,
                     timestamp: new_block_timestamp,
+                    prev_randao: new_block_prev_randao,
                 });
 
                 // Pause briefly before starting next height, just to make following the logs easier

@@ -457,10 +457,6 @@ impl State {
 
         Ok(())
     }
-
-    pub fn is_current_proposer(&self) -> bool {
-        self.current_proposer == Some(self.address)
-    }
 }
 
 /// Re-assemble a [`ProposedValue`] from its [`ProposalParts`].

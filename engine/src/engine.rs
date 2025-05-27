@@ -1,5 +1,4 @@
 use color_eyre::eyre::{self, Ok};
-use rand::RngCore;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
@@ -35,11 +34,16 @@ impl Engine {
         head_block_hash: BlockHash,
     ) -> eyre::Result<BlockHash> {
         debug!("🟠 set_latest_forkchoice_state: {:?}", head_block_hash);
+
         let ForkchoiceUpdated {
             payload_status,
             payload_id,
         } = self.api.forkchoice_updated(head_block_hash, None).await?;
+
         assert!(payload_id.is_none(), "Payload ID should be None!");
+
+        debug!("➡️ payload_status: {:?}", payload_status);
+
         match payload_status.status {
             PayloadStatusEnum::Valid => Ok(payload_status.latest_valid_hash.unwrap()),
             PayloadStatusEnum::Syncing if payload_status.latest_valid_hash.is_none() => {
@@ -78,7 +82,7 @@ impl Engine {
             // The beacon chain generates this value using aggregated validator signatures over time.
             // The mix_hash field in the generated block will be equal to prev_randao.
             // TODO: generate value according to spec.
-            prev_randao: self.random_prev_randao(),
+            prev_randao: latest_block.prev_randao,
 
             // TODO: provide proper address.
             suggested_fee_recipient: Address::repeat_byte(42).to_alloy_address(),
@@ -96,7 +100,9 @@ impl Engine {
             .api
             .forkchoice_updated(block_hash, Some(payload_attributes))
             .await?;
+
         assert_eq!(payload_status.latest_valid_hash, Some(block_hash));
+
         match payload_status.status {
             PayloadStatusEnum::Valid => {
                 assert!(payload_id.is_some(), "Payload ID should be Some!");
@@ -126,11 +132,5 @@ impl Engine {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_else(|_| Duration::from_secs(0))
             .as_secs()
-    }
-
-    fn random_prev_randao(&self) -> B256 {
-        let mut bytes = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut bytes);
-        bytes.into()
     }
 }
