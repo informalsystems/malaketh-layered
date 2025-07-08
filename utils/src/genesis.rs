@@ -37,7 +37,7 @@ pub(crate) fn generate_genesis() -> Result<()> {
 
     println!("Using signer addresses:");
     for (i, addr) in signer_addresses.iter().enumerate() {
-        println!("Signer {}: {}", i, addr);
+        println!("Signer {i}: {addr}");
     }
 
     // Create genesis configuration with pre-funded accounts
@@ -90,7 +90,7 @@ pub(crate) fn generate_genesis() -> Result<()> {
     // Write genesis to file
     let genesis_json = serde_json::to_string_pretty(&genesis)?;
     std::fs::write(genesis_file, genesis_json)?;
-    println!("Genesis configuration written to {}", genesis_file);
+    println!("Genesis configuration written to {genesis_file}");
 
     Ok(())
 }
