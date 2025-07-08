@@ -282,7 +282,7 @@ impl fmt::Display for Stats {
         let stats_failed = if self.errors_counter.is_empty() {
             String::new()
         } else {
-            let failed = self.errors_counter.iter().map(|(_, c)| *c).sum::<u64>();
+            let failed = self.errors_counter.values().copied().sum::<u64>();
             format!("; {} failed with {:?}", failed, self.errors_counter)
         };
         write!(f, "{stats}{stats_failed}")
