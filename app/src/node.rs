@@ -175,7 +175,7 @@ impl Node for App {
                     "test-2" => 28551,
                     _ => 8551,
                 };
-                Url::parse(&format!("http://localhost:{}", engine_port))?
+                Url::parse(&format!("http://localhost:{engine_port}"))?
             };
             let jwt_path = PathBuf::from_str("./assets/jwtsecret")?; // Should be the same secret used by the execution client.
             let eth_url: Url = {
@@ -185,7 +185,7 @@ impl Node for App {
                     "test-2" => 28545,
                     _ => 8545,
                 };
-                Url::parse(&format!("http://localhost:{}", eth_port))?
+                Url::parse(&format!("http://localhost:{eth_port}"))?
             };
             Engine::new(
                 EngineRPC::new(engine_url, jwt_path.as_path())?,
