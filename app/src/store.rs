@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use std::mem::size_of;
 use std::ops::RangeBounds;
 use std::path::Path;
