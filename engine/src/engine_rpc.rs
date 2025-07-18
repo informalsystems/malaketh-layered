@@ -5,7 +5,6 @@ use serde_json::json;
 use std::collections::HashSet;
 use std::path::Path;
 use std::time::Duration;
-use tracing::{debug, error, info};
 
 use alloy_rpc_types_engine::{
     ExecutionPayloadEnvelopeV3, ExecutionPayloadV3, ForkchoiceState, ForkchoiceUpdated,
@@ -142,8 +141,6 @@ impl EngineRPC {
     }
 
     pub async fn exchange_capabilities(&self) -> eyre::Result<EngineCapabilities> {
-        info!("fsc-test: exchange_capabilites!!!");
-
         let capabilities: HashSet<String> = self
             .rpc_request(
                 ENGINE_EXCHANGE_CAPABILITIES,
@@ -187,8 +184,6 @@ impl EngineRPC {
             safe_block_hash: head_block_hash,
             finalized_block_hash: head_block_hash,
         };
-        info!("fsc-test: forkchoice_updated!!!");
-
         self.rpc_request(
             ENGINE_FORKCHOICE_UPDATED_V3,
             json!([forkchoice_state, maybe_payload_attributes]),
@@ -201,8 +196,6 @@ impl EngineRPC {
         &self,
         payload_id: AlloyPayloadId,
     ) -> eyre::Result<ExecutionPayloadV3> {
-        info!("fsc-test: get_payload!!!");
-
         let response: ExecutionPayloadEnvelopeV3 = self
             .rpc_request(
                 ENGINE_GET_PAYLOAD_V3,
@@ -219,7 +212,6 @@ impl EngineRPC {
         versioned_hashes: Vec<B256>,
         parent_block_hash: BlockHash,
     ) -> eyre::Result<PayloadStatus> {
-        info!("fsc-test: new_payload!!!");
         let payload = JsonExecutionPayloadV3::from(execution_payload);
         let params = json!([payload, versioned_hashes, parent_block_hash]);
         self.rpc_request(ENGINE_NEW_PAYLOAD_V3, params, ENGINE_NEW_PAYLOAD_TIMEOUT)

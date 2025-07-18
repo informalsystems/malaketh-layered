@@ -21,6 +21,7 @@ use crate::error::Error;
 
 const APP_FOLDER: &str = ".malachite";
 const CONFIG_FILE: &str = "config.toml";
+const APP_CONFIG_FILE: &str = "app_config.toml";
 const GENESIS_FILE: &str = "genesis.json";
 const PRIV_VALIDATOR_KEY_FILE: &str = "priv_validator_key.json";
 
@@ -91,6 +92,12 @@ impl Args {
     /// and the configuration folder.
     pub fn get_config_file_path(&self) -> Result<PathBuf, Error> {
         Ok(self.get_config_dir()?.join(CONFIG_FILE))
+    }
+
+    /// get_app_config_file_path returns the configuration file path based on the command-line arguments
+    /// and the configuration folder.
+    pub fn get_app_config_file_path(&self) -> Result<PathBuf, Error> {
+        Ok(self.get_config_dir()?.join(APP_CONFIG_FILE))
     }
 
     /// get_genesis_file_path returns the genesis file path based on the command-line arguments and

@@ -17,6 +17,7 @@ mod node;
 mod state;
 mod store;
 mod streaming;
+mod app_config;
 
 use node::App;
 
@@ -63,11 +64,16 @@ fn start(args: &Args, cmd: &StartCmd, logging: config::LoggingConfig) -> Result<
     let config_file = args
         .get_config_file_path()
         .map_err(|error| eyre!("Failed to get configuration file path: {error}"))?;
+    let app_config_file = args
+        .get_app_config_file_path()
+        .map_err(|error| eyre!("Failed to get configuration file path: {error}"))?;
 
     let mut config = config::load_config(&config_file, None)
         .map_err(|error| eyre!("Failed to load configuration file: {error}"))?;
-
     config.logging = logging;
+
+    let app_config = app_config::load_config(&app_config_file, None)
+        .map_err(|error| eyre!("Failed to load app configuration file: {error}"))?;
 
     let rt = runtime::build_runtime(config.runtime)?;
 
@@ -81,6 +87,7 @@ fn start(args: &Args, cmd: &StartCmd, logging: config::LoggingConfig) -> Result<
     // Setup the application
     let app = App {
         config,
+        app_config,
         home_dir: args.get_home_dir()?,
         genesis_file: args.get_genesis_file_path()?,
         private_key_file: args.get_priv_validator_key_file_path()?,
@@ -96,6 +103,7 @@ fn init(args: &Args, cmd: &InitCmd, logging: config::LoggingConfig) -> Result<()
     // Setup the application
     let app = App {
         config: Default::default(), // There is not existing configuration yet
+        app_config: Default::default(),
         home_dir: args.get_home_dir()?,
         genesis_file: args.get_genesis_file_path()?,
         private_key_file: args.get_priv_validator_key_file_path()?,
@@ -116,6 +124,7 @@ fn testnet(args: &Args, cmd: &TestnetCmd, logging: config::LoggingConfig) -> Res
     // Setup the application
     let app = App {
         config: Default::default(), // There is not existing configuration yet
+        app_config: Default::default(),
         home_dir: args.get_home_dir()?,
         genesis_file: args.get_genesis_file_path()?,
         private_key_file: args.get_priv_validator_key_file_path()?,

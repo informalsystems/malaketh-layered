@@ -29,7 +29,7 @@ use malachitebft_eth_types::{
 };
 use tokio::task::JoinHandle;
 use url::Url;
-
+use crate::app_config::AppConfig;
 use crate::metrics::DbMetrics;
 use crate::state::State;
 use crate::store::Store;
@@ -38,6 +38,7 @@ use crate::store::Store;
 #[derive(Clone)]
 pub struct App {
     pub config: Config,
+    pub app_config: AppConfig,
     pub home_dir: PathBuf,
     pub genesis_file: PathBuf,
     pub private_key_file: PathBuf,
@@ -167,25 +168,34 @@ impl Node for App {
         let mut state = State::new(genesis, ctx, signing_provider, address, start_height, store);
 
         let engine: Engine = {
-            // TODO: make EL host, EL port, and jwt secret configurable
             let engine_url: Url = {
-                let engine_port = match self.config.moniker.as_str() {
-                    "test-0" => 8551,
-                    "test-1" => 18551,
-                    "test-2" => 28551,
-                    _ => 8551,
-                };
-                Url::parse(&format!("http://localhost:{engine_port}"))?
+                let url = self.app_config.engine_url.as_str();
+                if url.is_empty() {
+                    let engine_port = match self.config.moniker.as_str() {
+                        "test-0" => 8551,
+                        "test-1" => 18551,
+                        "test-2" => 28551,
+                        _ => 8551,
+                    };
+                    Url::parse(&format!("http://localhost:{engine_port}").as_str())?
+                } else {
+                    Url::parse(url)?
+                }
             };
             let jwt_path = PathBuf::from_str("./assets/jwtsecret")?; // Should be the same secret used by the execution client.
             let eth_url: Url = {
-                let eth_port = match self.config.moniker.as_str() {
-                    "test-0" => 8545,
-                    "test-1" => 18545,
-                    "test-2" => 28545,
-                    _ => 8545,
-                };
-                Url::parse(&format!("http://localhost:{eth_port}"))?
+                let url = self.app_config.eth_url.as_str();
+                if url.is_empty(){
+                    let eth_port = match self.config.moniker.as_str() {
+                        "test-0" => 8545,
+                        "test-1" => 18545,
+                        "test-2" => 28545,
+                        _ => 8545,
+                    };
+                    Url::parse(&format!("http://localhost:{eth_port}"))?
+                } else {
+                    Url::parse(&url)?
+                }
             };
             Engine::new(
                 EngineRPC::new(engine_url, jwt_path.as_path())?,
