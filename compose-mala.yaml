@@ -1,0 +1,50 @@
+services:
+  mala0:
+    image: chengzhinei2/malaketh-layered:v1.0.0
+    container_name: mala0
+    volumes:
+      - ./nodes/0:/data
+      - ./assets:/app/assets
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PATH: /app
+    command:
+      # - "malachitebft-eth-app"
+      - "start"
+      - "--home"
+      - "/data"
+  mala1:
+    image: chengzhinei2/malaketh-layered:v1.0.0
+    container_name: mala1
+    volumes:
+      - ./nodes/1:/data
+      - ./assets:/app/assets
+        #ports:
+        #- "27001:27001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PATH: /app
+    command:
+      #      - "malachitebft-eth-app"
+      - "start"
+      - "--home"
+      - "/data"
+  mala2:
+    image: chengzhinei2/malaketh-layered:v1.0.0
+    container_name: mala2
+    volumes:
+      - ./nodes/2:/data
+      - ./assets:/app/assets
+        #ports:
+        #- "27002:27002"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PATH: /app
+    command:
+      #- "malachitebft-eth-app"
+      - "start"
+      - "--home"
+      - "/data"

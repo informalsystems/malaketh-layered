@@ -1,0 +1,3 @@
+engine_url = "http://reth2:8551"
+eth_url = "http://reth2:8545"
+wt_path = "./assets/jwtsecret"
