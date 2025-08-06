@@ -1,6 +1,6 @@
 # Malaketh-layered: Malachite for Ethereum execution clients via Engine API
 
-Tendermint-based consensus engine for Ethereum execution clients, connected via [Engine API][engine-api]. 
+Tendermint-based consensus engine for Ethereum execution clients, connected via [Engine API][engine-api].
 Built as a shim layer on top of [Malachite][malachite].
 
 __Table of contents__
@@ -11,7 +11,7 @@ __Table of contents__
 - [Performance evaluation](#performance-evaluation)
 - [Links](#links)
 - [Running a local testnet](#running-a-local-testnet)
-  
+
 ## Introduction
 
 Ethereum's architecture consists of two primary layers: Consensus Layer (CL) and Execution Layer
@@ -19,7 +19,7 @@ Ethereum's architecture consists of two primary layers: Consensus Layer (CL) and
 (PoC) to explore how Malachite can function as the consensus engine (CL) for Ethereum execution
 clients (EL) through Engine API. Our goal is to show how Malachite can act as the consensus engine
 for Layer 1 blockchains with Ethereum Virtual Machine (EVM) smart contracts, as well as a sequencer
-for Layer 2 chains. 
+for Layer 2 chains.
 
 By leveraging Malachite's channel-based interface, we built a lightweight shim layer on top that
 integrates seamlessly with any execution client supporting Engine API. For this PoC we have chosen
@@ -41,7 +41,7 @@ Engine API plays a central role in Ethereum's post-merge architecture, defining 
 interface between the Consensus Layer (CL) and Execution Layer (EL). The CL is responsible for
 agreeing on the canonical chain and finalising blocks, while the EL handles block creation,
 processing and execution, state management, blockchain storage, mempool management, RPC interfaces,
-and more. 
+and more.
 
 From the perspective of Engine API, the CL is a client that makes RPC calls with Engine API methods
 to the EL, the RPC server. Key methods are:
@@ -57,7 +57,7 @@ to the EL, the RPC server. Key methods are:
 ## Malachite as a library
 
 Malachite offers three interfaces at different abstraction levels: Low-level, Actors, and Channels.
-These interfaces range from fine-grained control to ready-to-use functionality. 
+These interfaces range from fine-grained control to ready-to-use functionality.
 
 In this PoC, we use the Channel-based interface, which prioritises ease of use over customisation.
 It provides built-in synchronisation, crash recovery, networking for consensus voting, and block
@@ -84,7 +84,7 @@ API, see the [Malachite Channels tutorial][channels].
 ## Connecting Malachite to Engine API
 
 Malaketh-layered is an application built on top of Malachite, which is unaware of Engine API and
-only exposes the Channels interface. 
+only exposes the Channels interface.
 
 The application includes two main components for interacting with the execution client:
 - An RPC client with JWT authentication to send Engine API requests to the execution client.
@@ -132,9 +132,9 @@ following steps:
    head  of the chain and finalise it.
 3. Update the local state with the new block and certificate. Finally, signal Malachite to proceed
    to the next height.
-    
+
 <img src="docs/assets/malaketh-layered-2.png" width="800" />
-    
+
 
 ### Voting and committing as a non-proposer
 
@@ -142,7 +142,7 @@ As a non-proposer, the application receives `AppMsg::ReceivedProposalPart` event
 fragments. Once all parts are re-assembled, the block is stored locally. Eventually, Malachite
 concludes consensus by emitting a `AppMsg::Decided` event. The application then calls `newPayload`
 to submit the decided block to the execution client, followed by`forkchoiceUpdated` to update the
-chain head and finalise the block. 
+chain head and finalise the block.
 
 <img src="docs/assets/malaketh-layered-3.png" width="800" />
 
@@ -151,7 +151,7 @@ chain head and finalise the block.
 We deployed three nodes on a local network, each pairing a Malaketh-layered application with a Reth
 instance. A separate application generates EIP-1559 token-transfer transactions (approximately 120
 bytes each) at a rate of 1000 transactions per second (tps), sending them to one of the node’s
-mempools for dissemination. 
+mempools for dissemination.
 
 The network processes blocks at an average rate of 6 blocks per second, successfully handling all
 transaction load. However, a significant number of these blocks are empty, even in the presence of
@@ -216,3 +216,19 @@ cargo run --bin malachitebft-eth-utils spam --time=60 --rate=1000
 [cast]: https://book.getfoundry.sh/cast/
 [channels]: https://github.com/informalsystems/malachite/blob/13bca14cd209d985c3adf101a02924acde8723a5/docs/tutorials/channels.md
 [flexible]: https://informal.systems/blog/the-most-flexible-consensus-api-in-the-world
+
+## License
+
+Copyright 2025 Informal Systems Inc
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
